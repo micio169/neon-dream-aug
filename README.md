@@ -1,4 +1,72 @@
-# neon-dream-aug
-🎰 Premium PUBG Black Market Crate Simulator focused on the Ultimate 'Neon Dream - AUG'. Experience a full simulation pipeline: Steam Wallet Top-up ➡️ G-Coin Exchange ➡️ Immersive Unboxing FX with individual card flips and Instant Skip mechanics.
+# 🎰 배틀그라운드 블랙마켓 상자깡 시뮬레이터: 네온 드림 - AUG (Neon Dream - AUG)
+
+![PUBG](https://img.shields.io/badge/PUBG-Black_Market-orange?style=for-the-badge)
+![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![JavaScript](https://img.shields.io/badge/javascript-%23F7DF1E.svg?style=for-the-badge&logo=javascript&logoColor=black)
+
+배틀그라운드 인게임의 블랙마켓 밀수품 상자 뽑기 시스템을 브라우저 환경에 완벽하게 묘사한 고화질 단일 페이지 웹 애플리케이션(SPA)입니다. 본 시뮬레이터는 블랙마켓의 종착지이자 최고 등급 무기 스킨인 **'네온 드림 - AUG'**의 획득 연출을 극대화하고 저격하는 데 초점을 맞추어 빌드되었습니다.
+
+---
+
+## 🌟 핵심 구현 기능 (Key Features)
+
+### 🔫 최상위 목표: "네온 드림 - AUG" 중심 설계
+- **비주얼 압도:** 뽑기 화면 및 확률표 구조 전체가 얼티밋/레전더리 등급의 **네온 드림 - AUG** 스킨을 돋보이게 하도록 UI/UX를 설계했습니다.
+- **황금빛 네온 발광 (`glow-gold`):** AUG를 비롯한 상위 등급 아이템을 뽑았을 때, 카드가 뒤집히며 강렬한 황금빛 네온 이펙트와 전용 등급 배지가 표시되어 인게임 특유의 도파민 연출을 그대로 제공합니다.
+
+### 💳 인게임 재화 거래 파이프라인 완벽 모사
+1. **스팀 월렛(Steam Wallet) 상점:** 최소 5,000원부터 최대 100,000원까지 원화 자금을 임의로 충전하는 UI를 구현했습니다.
+2. **독립형 G-Coin 충전소:** 스팀 월렛 잔액을 소모하여 고정 달러 단가($1.00 = ₩1,350 환산) 기준으로 지코인 패키지를 구매할 수 있습니다.
+3. **1회 한정 이벤트 상품 제어:** 1,000G / 5,000G / 10,000G의 초특가 이벤트 상품은 계정당 딱 1번만 구매할 수 있도록 데이터 플래그를 심어 구매 즉시 솔드아웃(블러 및 비활성화) 처리됩니다.
+
+### 🎬 하이엔드 가챠 애니메이션 연출
+- **웅장한 등장 효과:** 상자가 소환될 때 스케일 변화, 네온 블러, 페이드인 처리가 유기적으로 맞물려 웅장한 가챠 오프닝을 연출합니다.
+- **개별 언박싱 & 스킵(Skip) 시스템:** 소환된 상자 카드를 유저가 하나씩 직접 클릭하여 락을 해제할 수 있으며, 우측 하단의 **'한번에 열기(Skip)'** 버튼을 누르면 즉시 모든 연출을 생략하고 최종 획득 인벤토리 요약창으로 전환됩니다.
+- **백엔드 연동 번들 처리:** 제공된 규칙에 따라 모든 무기 추첨 시 스크랩(+10개) 보너스가 보이지 않는 곳에서 내부적으로 자동 귀속 및 번들 연동 처리됩니다.
+
+---
+
+## 📊 정밀 확률 테이블 (Probability Engine)
+
+제공된 공식 밀수품 상자 확률 데이터셋을 기반으로 소수점 4자리까지 오차 없이 작동하는 가중치 기반 랜덤 분배 알고리즘을 탑재했습니다.
+
+| 등급 (Grade) | 아이템 이름 (Item Name) | 적용 확률 | 테마 연출 |
+| :--- | :--- | :---: | :---: |
+| **얼티밋 (Ultimate)** | 네온 드림 - AUG (화이트 오렌지) | **0.3000%** | 🌟 황금 네온 |
+| **얼티밋 (Ultimate)** | 네온 드림 - AUG (마젠타) | **0.1000%** | 🌟 황금 네온 |
+| **레전더리 (Legendary)** | 네온 드림 - AUG | **0.9000%** | 🌟 황금 네온 |
+| **에픽 (Epic)** | 네온 드림 - 미니14 / 스팅어 시리즈 | **1.3000%** | 🔘 은색 발광 |
+| **엘리트 (Elite)** | 갤럭시 암즈 / 실버 / 서펜트 가든 시리즈 | **1.8000%** | 🌟 황금 네온 |
+| **레어 (Rare)** | 프랙탈 스플래시 / 체크 크롬 시리즈 | **1.8900%** | 🔘 은색 발광 |
+| **스페셜 (Special)** | 제로 아워 / 폴카 데스 / 투톤 시리즈 | **2.2800%** | 🌟 황금 네온 |
+| **재료 (Material)** | 도면 | **0.9000%** | 🔘 은색 발광 |
+| **재료 (Material)** | 폴리머 (50개 / 100개 / 200개) | **최대 7.63%**| 🔘 은색 발광 |
+
+---
+
+## 🛠️ 기술 스택 (Tech Stack)
+
+- **Frontend:** Pure HTML5, Vanilla JavaScript (ES6+)
+- **Styling:** Tailwind CSS (현대적인 JIT 컴파일러 CDN 적용), FontAwesome 6 Icons
+- **Architecture:** 100% 클라이언트 사이드 구동 정적 웹 SPA. 별도의 데이터베이스나 서버 통신 없이 웹 브라우저 자체 엔진으로 모든 재화 계산, 트랜잭션 가드, 확률 추첨이 연산되므로 **GitHub Pages** 호스팅 환경에 가장 완벽하게 최적화되어 있습니다.
+
+---
+
+## 🚀 깃허브 서버 배포 방법 (Deployment)
+
+외부 의존성이나 빌드 과정이 없으므로, 파일 이름을 반드시 **`index.html`**로 지정하여 레포지토리에 올리면 바로 배포가 가능합니다.
+
+1. 이 프로젝트의 소스코드를 소문자 `index.html` 파일로 저장하여 본 레포지토리 루트에 업로드합니다.
+2. 레포지토리 상단의 **Settings** 메뉴로 이동합니다.
+3. 좌측 사이드바의 **Pages** 탭을 클릭합니다.
+4. *Build and deployment* 섹션에서 Source branch를 `main` 또는 `master`로 지정한 후 **Save**를 누릅니다.
+5. 잠시 후 전 세계 어디서나 접속 가능한 `https://<본인-깃허브-아이디>.github.io/neon-dream-aug/` 링크가 활성화됩니다!
+
+---
+
+## 📝 라이선스 및 비고
+- Developed by **Taekbly**.
+- 본 시뮬레이터에 포함된 모든 수식 로직 및 디자인 리소스의 시각적 권리는 원저작권자에게 있습니다. 본 프로그램은 영리적 목적이 없는 고화질 기능 시뮬레이션 및 팬 메이드 품질 테스트 목적으로 제작되었습니다.
 
 [GO WEBSITE](https://micio169.github.io/neon-dream-aug/)
