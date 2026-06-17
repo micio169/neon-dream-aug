@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PUBG BLACKMARKET CRATE SIMULATOR</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@300;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #0b0c10;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        .font-cyber {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* 네온 이펙트 정의 */
+        .glow-gold {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+            text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+        }
+        
+        .glow-silver {
+            box-shadow: 0 0 15px rgba(148, 163, 184, 0.3);
+            text-shadow: 0 0 8px rgba(148, 163, 184, 0.5);
+        }
+
+        /* 카드 오프닝 애니메이션 효과 */
+        .crate-card {
+            perspective: 1000px;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card-inner.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 4px;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 2px dashed #4b5563;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* 가챠 연출 전체 화면 오버레이 애니메이션 */
+        @keyframes boxDrop {
+            0% { transform: scale(3); opacity: 0; filter: blur(20px); }
+            50% { transform: scale(0.95); opacity: 0.8; filter: blur(0px); }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-box-drop {
+            animation: boxDrop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* 스크롤바 디자인 커스텀 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0c10;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f59e0b;
+        }
+    </style>
+</head>
+<body class="bg-[#090a0f] min-h-screen selection:bg-amber-500 selection:text-black">
+
+    <header class="border-b-2 border-zinc-800 bg-[#0f111a] px-6 py-4 sticky top-0 z-40 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-500 text-black px-3 py-1 font-black tracking-tighter text-xl font-cyber uppercase transform -skew-x-12">
+                    PUBG
+                </div>
+                <h1 class="text-lg font-bold tracking-widest text-zinc-300 uppercase font-cyber">Black Market Crate Simulator</h1>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="flex items-center bg-[#181c26] border border-zinc-700 rounded px-4 py-2 gap-3 shadow-inner">
+                    <div class="text-xs font-bold text-zinc-400">
+                        <i class="fab fa-steam text-cyan-400 mr-1"></i> STEAM WALLET
+                    </div>
+                    <div class="font-cyber font-bold text-emerald-400" id="display-steam-balance">₩ 0</div>
+                    <button onclick="openSteamModal()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs px-2 py-1 rounded transition duration-200">
+                        <i class="fas fa-plus"></i> 충전
+                    </button>
+                </div>
+
+                <div class="flex items-center bg-[#181c26] border border-amber-500/50 rounded px-4 py-2 gap-3 shadow-md shadow-amber-950/20">
+                    <div class="text-xs font-bold text-amber-400">
+                        <i class="fas fa-coins mr-1"></i> G-COIN
+                    </div>
+                    <div class="font-cyber font-bold text-amber-400 glow-gold" id="display-gcoin-balance">0 G</div>
+                    <button onclick="openGcoinModal()" class="bg-amber-500 hover:bg-amber-400 text-black font-black text-xs px-2 py-1 rounded transition duration-200 uppercase">
+                        충전소
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-2 flex flex-col gap-8">
+            
+            <div class="relative bg-gradient-to-r from-zinc-900 to-black border-2 border-zinc-800 rounded p-6 overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl text-zinc-500 font-cyber font-black select-none pointer-events-none">
+                    CRATE
+                </div>
+                <div>
+                    <span class="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs px-2 py-1 font-bold rounded uppercase tracking-widest font-cyber">
+                        밀수품 상자 소환
+                    </span>
+                    <h2 class="text-3xl font-black text-white mt-2 tracking-wide font-cyber">BLACK MARKET SPECIAL BOX</h2>
+                    <p class="text-zinc-400 text-xs mt-1 leading-relaxed">
+                        최고 등급의 얼티밋 신규 성장형 무기 외형 완벽 포함.<br>
+                        <span class="text-amber-500 font-semibold">* 보너스 혜택:</span> 모든 뽑기 시 확정적으로 스크랩 10개가 번들로 연동되어 함께 지급됩니다.
+                    </p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <button onclick="executeGacha(1)" class="flex-1 bg-zinc-800 hover:bg-zinc-700 border-b-4 border-zinc-900 text-white font-bold p-4 rounded transition-all duration-200 active:transform active:scale-95 flex flex-col items-center min-w-[140px]">
+                        <span class="text-xs text-zinc-400 font-medium">1회 오픈</span>
+                        <div class="flex items-center gap-1 mt-1 text-amber-400 font-cyber font-black">
+                            <i class="fas fa-coins text-sm"></i> 200
+                        </div>
+                    </button>
+                    <button onclick="executeGacha(10)" class="flex-1 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 border-b-4 border-amber-700 text-black font-black p-4 rounded transition-all duration-200 active:transform active:scale-95 flex flex-col items-center min-w-[140px] shadow-lg shadow-amber-600/20">
+                        <span class="text-xs text-amber-950/70 font-black">10회 오픈</span>
+                        <div class="flex items-center gap-1 mt-1 font-cyber text-lg">
+                            <i class="fas fa-coins text-sm"></i> 2,000
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-[#0f111a] border border-zinc-800 rounded p-5 flex flex-col flex-1 min-h-[400px]">
+                <div class="flex justify-between items-center border-b border-zinc-800 pb-3 mb-4">
+                    <h3 class="text-sm font-bold tracking-widest text-zinc-400 uppercase">
+                        <i class="fas fa-boxes mr-2 text-amber-500"></i> 시뮬레이션 획득 목록 (인벤토리)
+                    </h3>
+                    <button onclick="clearInventory()" class="text-zinc-500 hover:text-red-400 text-xs font-bold transition duration-200">
+                        <i class="fas fa-trash-alt mr-1"></i> 전체 초기화
+                    </button>
+                </div>
+                
+                <div id="inventory-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 overflow-y-auto max-h-[500px] pr-2 flex-1">
+                    <div class="col-span-full flex flex-col items-center justify-center text-zinc-600 py-20">
+                        <i class="fas fa-ghost text-4xl mb-2"></i>
+                        <p class="text-xs">획득한 아이템이 없습니다. 상자를 오픈해보세요.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-[#0f111a] border border-zinc-800 rounded p-5 shadow-2xl">
+            <h3 class="text-sm font-bold tracking-widest text-zinc-300 uppercase border-b border-zinc-800 pb-3 mb-3">
+                <i class="fas fa-percentage mr-2 text-zinc-500"></i> 인게임 확률 구성표 정보
+            </h3>
+            <div class="overflow-y-auto max-h-[700px] pr-1 text-xs">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-zinc-900 text-zinc-400 uppercase text-[10px] font-bold tracking-wider">
+                            <th class="p-2 border border-zinc-800">아이템명 (등급)</th>
+                            <th class="p-2 border border-zinc-800 text-right">확률</th>
+                        </tr>
+                    </thead>
+                    <tbody id="probability-table-body" class="divide-y divide-zinc-900 text-zinc-400">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-steam" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#121620] border-2 border-cyan-600 rounded-lg max-w-md w-full overflow-hidden shadow-2xl transform transition-all">
+            <div class="bg-gradient-to-r from-cyan-900 to-zinc-900 px-6 py-4 flex justify-between items-center border-b border-cyan-800">
+                <h4 class="font-bold text-white tracking-wide"><i class="fab fa-steam text-cyan-400 mr-2"></i> Steam Wallet 자금 충전</h4>
+                <button onclick="closeSteamModal()" class="text-zinc-400 hover:text-white transition text-lg"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-zinc-400 text-xs leading-relaxed">스팀 월렛에 원화 자금을 안전하게 추가합니다. 추가된 금액은 G-Coin 패키지 결제 시 사용됩니다.</p>
+                <div class="bg-zinc-950 p-4 rounded border border-zinc-800 flex justify-between items-center">
+                    <span class="text-xs text-zinc-400 font-bold">현재 스팀 잔액</span>
+                    <span class="font-cyber font-bold text-lg text-emerald-400" id="modal-steam-current-balance">₩ 0</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="selectSteamRecharge(5000)" class="bg-zinc-800 hover:bg-zinc-700 p-3 rounded font-cyber text-sm font-bold text-zinc-200 text-center transition">₩ 5,000</button>
+                    <button onclick="selectSteamRecharge(10000)" class="bg-zinc-800 hover:bg-zinc-700 p-3 rounded font-cyber text-sm font-bold text-zinc-200 text-center transition">₩ 10,000</button>
+                    <button onclick="selectSteamRecharge(25000)" class="bg-zinc-800 hover:bg-zinc-700 p-3 rounded font-cyber text-sm font-bold text-zinc-200 text-center transition">₩ 25,000</button>
+                    <button onclick="selectSteamRecharge(50000)" class="bg-zinc-800 hover:bg-zinc-700 p-3 rounded font-cyber text-sm font-bold text-zinc-200 text-center transition">₩ 50,000</button>
+                </div>
+                <button onclick="selectSteamRecharge(100000)" class="w-full bg-zinc-800 hover:bg-zinc-700 p-3 rounded font-cyber text-sm font-bold text-zinc-200 text-center transition">₩ 100,000</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-gcoin" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#14161f] border-2 border-amber-500 rounded-lg max-w-3xl w-full max-h-[85vh] overflow-y-auto shadow-2xl">
+            <div class="bg-gradient-to-r from-amber-950 to-zinc-900 px-6 py-4 flex justify-between items-center border-b border-amber-900 sticky top-0 z-10">
+                <div>
+                    <h4 class="font-black text-amber-400 tracking-wider text-base uppercase font-cyber"><i class="fas fa-store mr-2"></i> G-COIN SHOP</h4>
+                    <p class="text-[10px] text-zinc-400 mt-0.5">환율 기준 고정 적용: $1.00 = ₩1,515 - (2026년 6월 17일 기준)</p>
+                </div>
+                <button onclick="closeGcoinModal()" class="text-zinc-400 hover:text-white transition text-lg"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-2 gap-4 bg-zinc-950 p-4 rounded border border-zinc-800 text-sm">
+                    <div class="flex justify-between items-center px-2">
+                        <span class="text-zinc-400 text-xs font-bold">보유 Steam Wallet</span>
+                        <span class="font-cyber font-bold text-cyan-400" id="gcoin-shop-steam-wallet">₩ 0</span>
+                    </div>
+                    <div class="flex justify-between items-center border-l border-zinc-800 px-2">
+                        <span class="text-zinc-400 text-xs font-bold">보유 G-COIN</span>
+                        <span class="font-cyber font-bold text-amber-400" id="gcoin-shop-gcoin-wallet">0 G</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h5 class="text-xs font-black text-rose-400 uppercase tracking-widest border-b border-zinc-800 pb-2 mb-3">
+                        <i class="fas fa-star mr-1"></i> 계정당 1회 한정 특별 이벤트 G-COIN 패키지
+                    </h5>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="bg-gradient-to-b from-rose-950/40 to-zinc-900 border border-rose-500/30 rounded p-4 flex flex-col justify-between items-center text-center relative" id="pack-event1000">
+                            <span class="absolute top-2 left-2 bg-rose-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded uppercase">Event 2x</span>
+                            <div class="font-cyber font-black text-2xl text-white mt-2">1,000 <span class="text-xs text-amber-400">G</span></div>
+                            <div class="text-xs text-zinc-400 mt-1 font-semibold">$4.99 <span class="text-[10px] text-zinc-500">(₩7,560)</span></div>
+                            <button onclick="purchaseGcoin('event1000')" class="w-full mt-4 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-2 rounded transition shadow-md shadow-rose-900/30 btn-event">구매하기</button>
+                        </div>
+                        <div class="bg-gradient-to-b from-rose-950/40 to-zinc-900 border border-rose-500/30 rounded p-4 flex flex-col justify-between items-center text-center relative" id="pack-event5000">
+                            <span class="absolute top-2 left-2 bg-rose-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded uppercase">Event 2x</span>
+                            <div class="font-cyber font-black text-2xl text-white mt-2">5,000 <span class="text-xs text-amber-400">G</span></div>
+                            <div class="text-xs text-zinc-400 mt-1 font-semibold">$24.99 <span class="text-[10px] text-zinc-500">(₩37,860)</span></div>
+                            <button onclick="purchaseGcoin('event5000')" class="w-full mt-4 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-2 rounded transition shadow-md shadow-rose-900/30 btn-event">구매하기</button>
+                        </div>
+                        <div class="bg-gradient-to-b from-rose-950/40 to-zinc-900 border border-rose-500/30 rounded p-4 flex flex-col justify-between items-center text-center relative" id="pack-event10000">
+                            <span class="absolute top-2 left-2 bg-rose-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded uppercase">Event 2x</span>
+                            <div class="font-cyber font-black text-2xl text-white mt-2">10,000 <span class="text-xs text-amber-400">G</span></div>
+                            <div class="text-xs text-zinc-400 mt-1 font-semibold">$49.99 <span class="text-[10px] text-zinc-500">(₩75,735)</span></div>
+                            <button onclick="purchaseGcoin('event10000')" class="w-full mt-4 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-2 rounded transition shadow-md shadow-rose-900/30 btn-event">구매하기</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h5 class="text-xs font-black text-amber-400 uppercase tracking-widest border-b border-zinc-800 pb-2 mb-3">
+                        <i class="fas fa-coins mr-1"></i> 정규 G-COIN 보급 상품 패키지
+                    </h5>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <div class="bg-zinc-900 border border-zinc-800 rounded p-3 flex flex-col justify-between items-center text-center">
+                            <div class="font-cyber font-bold text-base text-zinc-200">510 G</div>
+                            <div class="text-[11px] text-zinc-400 mt-0.5">$4.99</div>
+                            <div class="text-[9px] text-zinc-500">(₩7,560)</div>
+                            <button onclick="purchaseGcoin('std510')" class="w-full mt-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-[11px] py-1.5 rounded transition">구매</button>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-800 rounded p-3 flex flex-col justify-between items-center text-center">
+                            <div class="font-cyber font-bold text-base text-zinc-200">1,050 G</div>
+                            <div class="text-[11px] text-zinc-400 mt-0.5">$9.99</div>
+                            <div class="text-[9px] text-zinc-500">(₩15,135)</div>
+                            <button onclick="purchaseGcoin('std1050')" class="w-full mt-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-[11px] py-1.5 rounded transition">구매</button>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-800 rounded p-3 flex flex-col justify-between items-center text-center">
+                            <div class="font-cyber font-bold text-base text-zinc-200">2,700 G</div>
+                            <div class="text-[11px] text-zinc-400 mt-0.5">$24.99</div>
+                            <div class="text-[9px] text-zinc-500">(₩37,860)</div>
+                            <button onclick="purchaseGcoin('std2700')" class="w-full mt-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-[11px] py-1.5 rounded transition">구매</button>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-800 rounded p-3 flex flex-col justify-between items-center text-center">
+                            <div class="font-cyber font-bold text-base text-zinc-200">5,500 G</div>
+                            <div class="text-[11px] text-zinc-400 mt-0.5">$49.99</div>
+                            <div class="text-[9px] text-zinc-500">(₩75,735)</div>
+                            <button onclick="purchaseGcoin('std5500')" class="w-full mt-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-[11px] py-1.5 rounded transition">구매</button>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-800 rounded p-3 flex flex-col justify-between items-center text-center">
+                            <div class="font-cyber font-bold text-base text-zinc-200">11,200 G</div>
+                            <div class="text-[11px] text-zinc-400 mt-0.5">$99.99</div>
+                            <div class="text-[9px] text-zinc-500">(₩151,485)</div>
+                            <button onclick="purchaseGcoin('std11200')" class="w-full mt-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-[11px] py-1.5 rounded transition">구매</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-gacha-screen" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col justify-between p-6">
+        
+        <div class="flex justify-between items-center max-w-7xl w-full mx-auto">
+            <div class="text-zinc-500 text-xs font-bold font-cyber tracking-widest uppercase">
+                <i class="fas fa-circle-notch animate-spin text-amber-500 mr-2"></i> Unboxing Black Market Supply Crate
+            </div>
+            <div class="text-zinc-400 text-xs">상자 카드를 클릭하여 각각 개별 잠금을 해제하십시오.</div>
+        </div>
+
+        <div class="max-w-6xl w-full mx-auto my-auto py-10">
+            <div id="gacha-display-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-6 justify-center items-center">
+                </div>
+        </div>
+
+        <div class="max-w-7xl w-full mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-zinc-900 pt-4">
+            <div class="text-xs text-zinc-500">
+                금색 테두리: <span class="text-amber-400 font-bold">얼티밋/레전더리/엘리트/스페셜</span> | 은색 테두리: <span class="text-slate-400 font-bold">에픽/레어/재료아이템</span>
+            </div>
+            
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button id="btn-skip-gacha" onclick="skipGachaAnimation()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-sm px-6 py-3 rounded border border-zinc-700 transition active:scale-95 w-full sm:w-auto">
+                    한번에 열기 (Skip)
+                </button>
+                <button id="btn-close-gacha" onclick="closeGachaScreen()" class="bg-amber-500 hover:bg-amber-400 text-black font-black text-sm px-8 py-3 rounded transition active:scale-95 hidden w-full sm:w-auto shadow-lg shadow-amber-500/20">
+                    인벤토리로 확인 완료
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // 전역 시뮬레이터 상태 데이터 설정 모델
+        const state = {
+            steamBalance: 0,
+            gCoinBalance: 0,
+            purchasedEvents: {
+                event1000: false,
+                event5000: false,
+                event10000: false
+            },
+            exchangeRate: 1515, // 1달러당 1515원 고정 계산 (2026년 6월 17일 기준) - ㅅㅂ 환율이 이게 맞냐ㅗㅗ
+            inventory: [],
+            currentSessionItems: [] // 현재 가챠창에 뜬 묶음 아이템
+        };
+
+        // 이미지 확률 테이블의 완벽 분석 및 데이터 구조화 구축
+        // 보너스 번들 스크랩(+10)은 전제조건에 따라 UI 노출을 제외하고 내부 보상 데이터셋에만 귀속 처리
+        const PROBABILITY_TABLE = [
+            // 이미지 1 파트
+            { name: "네온 드림 - AUG (화이트 오렌지)", grade: "얼티밋 크로마", prob: 0.3000, theme: "gold" }, // 이게 뒤지게 안나오는데 내 문제인가 코드 문제인가 모르겠음. 어쩌라고 ㅗㅗ
+            { name: "네온 드림 - AUG (마젠타)", grade: "얼티밋 크로마", prob: 0.1000, theme: "gold" }, // 이게 뒤지게 안나오는데 내 문제인가 코드 문제인가 모르겠음. 어쩌라고 ㅗㅗ
+            { name: "네온 드림 - AUG", grade: "레전더리", prob: 0.9000, theme: "gold" },
+            { name: "네온 드림 - 미니14", grade: "에픽", prob: 1.3000, theme: "silver" },
+            { name: "스팅어 - 베릴 M762", grade: "에픽", prob: 1.3000, theme: "silver" },
+            { name: "스팅어 - SLR", grade: "에픽", prob: 1.3000, theme: "silver" },
+            { name: "갤럭시 암즈 - AKM", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "갤럭시 암즈 - SKS", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "갤럭시 암즈 - MP9", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "파인 아트 - 토미 건", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "트라이펙타 - SCAR-L", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "크리스마스 트리 - P18C", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "오버 더 레인보우 - UMP", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "오버 더 레인보우 - 미니14", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "오버 더 레인보우 - SLR", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "고스트 그립 - Mk12", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "서펜트 가든 - AKM", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "서펜트 가든 - M416", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            
+            // 이미지 2 파트
+            { name: "실버 - SCAR-L", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "실버 - S12K", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "틱톡 - QBZ", grade: "엘리트", prob: 1.8000, theme: "gold" },
+            { name: "프랙탈 스플래시 - Mk47 뮤턴트", grade: "레어", prob: 1.8900, theme: "silver" },
+            { name: "프랙탈 스플래시 - VSS", grade: "레어", prob: 1.8900, theme: "silver" },
+            { name: "프랙탈 스플래시 - ACE32", grade: "레어", prob: 1.8900, theme: "silver" },
+            { name: "체크 크롬 - 그로자", grade: "레어", prob: 1.8900, theme: "silver" },
+            { name: "스노우 플레이크 - MP5K", grade: "레어", prob: 1.8900, theme: "silver" },
+            { name: "체크 크롬 - Mk47 뮤턴트", grade: "레어", prob: 1.8900, theme: "silver" },
+            { name: "실버 - 벡터", grade: "레어", prob: 1.8900, theme: "silver" },
+            { name: "실버 - UMP", grade: "레어", prob: 1.8900, theme: "silver" },
+            { name: "실버 - 토미 건", grade: "레어", prob: 1.8900, theme: "silver" },
+            { name: "제로 아워 - P18C", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "제로 아워 - UMP", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "마린 매트 (파란색) - VSS", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "마린 매트 (파란색) - S686", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "폴카 데스 - M16A4", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "폴카 데스 - K2", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            
+            // 이미지 3 파트 (중복 잘림 보정하여 추가 매핑 완료)
+            { name: "폴카 데스 - S12K", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "마린 매트 (초록색) - 벡터", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "트라이 스트라이프 - Deagle", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "트라이 스트라이프 - 쇠지렛대", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "투톤 - P92", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "투톤 - 석궁", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "투톤 - M16A4", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "마린 매트 (초록색) - MP5K", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "실버 - VSS", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "실버 - S1897", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "정글 디지털 - M16A4", grade: "스페셜", prob: 2.2800, theme: "gold" },
+            { name: "도면", grade: "재료", prob: 0.9000, theme: "silver" },
+            { name: "폴리머 (200개)", grade: "재료", prob: 1.0000, theme: "silver" },
+            { name: "폴리머 (100개)", grade: "재료", prob: 2.5000, theme: "silver" },
+            { name: "폴리머 (50개)", grade: "재료", prob: 7.6300, theme: "silver" }
+        ];
+
+        // 초기 바인딩 렌더러 실행 구문
+        window.addEventListener('DOMContentLoaded', () => {
+            renderProbabilityTable();
+            updateUIDisplay();
+        });
+
+        // 1. UI 및 잔액 표기 갱신 헬퍼 함수
+        function updateUIDisplay() {
+            document.getElementById('display-steam-balance').innerText = `₩ ${state.steamBalance.toLocaleString()}`;
+            document.getElementById('display-gcoin-balance').innerText = `${state.gCoinBalance.toLocaleString()} G`;
+            
+            // 모달 내부 연동 인터페이스 갱신
+            document.getElementById('modal-steam-current-balance').innerText = `₩ ${state.steamBalance.toLocaleString()}`;
+            document.getElementById('gcoin-shop-steam-wallet').innerText = `₩ ${state.steamBalance.toLocaleString()}`;
+            document.getElementById('gcoin-shop-gcoin-wallet').innerText = `${state.gCoinBalance.toLocaleString()} G`;
+        }
+
+        // 2. 우측 확률표 렌더링 파이프라인
+        function renderProbabilityTable() {
+            const tbody = document.getElementById('probability-table-body');
+            tbody.innerHTML = '';
+            
+            PROBABILITY_TABLE.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-zinc-900/60 transition";
+                
+                const badgeColor = item.theme === 'gold' ? 'text-amber-400 font-bold' : 'text-slate-400';
+                
+                tr.innerHTML = `
+                    <td class="p-2 border border-zinc-900 flex flex-col">
+                        <span class="text-zinc-200 font-medium">${item.name}</span>
+                        <span class="text-[10px] ${badgeColor}">${item.grade}</span>
+                    </td>
+                    <td class="p-2 border border-zinc-900 text-right font-cyber tracking-wide text-zinc-300">${item.prob.toFixed(4)}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 3. 모달 제어 핸들러 로직
+        function openSteamModal() { document.getElementById('modal-steam').classList.remove('hidden'); }
+        function closeSteamModal() { document.getElementById('modal-steam').classList.add('hidden'); }
+        function openGcoinModal() { updateUIDisplay(); document.getElementById('modal-gcoin').classList.remove('hidden'); }
+        function closeGcoinModal() { document.getElementById('modal-gcoin').classList.add('hidden'); }
+
+        // 4. 스팀 월렛 임의 자금 충전 실행부
+        function selectSteamRecharge(amount) {
+            state.steamBalance += amount;
+            alert(`성공적으로 Steam Wallet에 ₩${amount.toLocaleString()}이 추가되었습니다.`);
+            updateUIDisplay();
+            closeSteamModal();
+        }
+
+        // 5. G-Coin 상점 결제 처리 프로세서 (달러 단가 매칭 및 이벤트 상품 제어)
+        function purchaseGcoin(packId) {
+            let krwCost = 0;
+            let gcoinReward = 0;
+            let isEvent = false;
+
+            switch(packId) {
+                // 이벤트 한정 팩 가격 및 리워드 테이블 정의
+                case 'event1000': krwCost = Math.round(4.99 * state.exchangeRate); gcoinReward = 1000; isEvent = true; break;
+                case 'event5000': krwCost = Math.round(24.99 * state.exchangeRate); gcoinReward = 5000; isEvent = true; break;
+                case 'event10000': krwCost = Math.round(49.99 * state.exchangeRate); gcoinReward = 10000; isEvent = true; break;
+                // 일반 정규 상품 라인
+                case 'std510': krwCost = Math.round(4.99 * state.exchangeRate); gcoinReward = 510; break;
+                case 'std1050': krwCost = Math.round(9.99 * state.exchangeRate); gcoinReward = 1050; break;
+                case 'std2700': krwCost = Math.round(24.99 * state.exchangeRate); gcoinReward = 2700; break;
+                case 'std5500': krwCost = Math.round(49.99 * state.exchangeRate); gcoinReward = 5500; break;
+                case 'std11200': krwCost = Math.round(99.99 * state.exchangeRate); gcoinReward = 11200; break;
+            }
+
+            // 조건 1: 일회성 이벤트 패키지 중복 구매 검증 가드
+            if (isEvent && state.purchasedEvents[packId]) {
+                alert("해당 이벤트 상품은 계정당 단 1회만 구매할 수 있는 한정 패키지입니다.");
+                return;
+            }
+
+            // 조건 2: 원화 잔액 잔고 검증 가드
+            if (state.steamBalance < krwCost) {
+                alert(`스팀 월렛 잔액이 부족합니다.\n결제 필요 금액: ₩${krwCost.toLocaleString()}\n현재 잔액: ₩${state.steamBalance.toLocaleString()}`);
+                return;
+            }
+
+            // 트랜잭션 연산 처리
+            state.steamBalance -= krwCost;
+            state.gCoinBalance += gcoinReward;
+
+            if (isEvent) {
+                state.purchasedEvents[packId] = true;
+                const packElement = document.getElementById(`pack-${packId}`);
+                packElement.classList.add('opacity-40');
+                const btn = packElement.querySelector('.btn-event');
+                btn.disabled = true;
+                btn.innerText = "구매 완료 (품절)";
+                btn.className = "w-full mt-4 bg-zinc-700 text-zinc-400 font-bold text-xs py-2 rounded cursor-not-allowed text-center";
+            }
+
+            alert(`구매가 정상 처리되었습니다.\n지급된 재화: +${gcoinReward.toLocaleString()} G-COIN\n차감된 스팀 잔액: ₩${krwCost.toLocaleString()}`);
+            updateUIDisplay();
+        }
+
+        // 6. 누적 가챠 연산 모듈 (랜덤 가중치 추첨 알고리즘 구현)
+        function pickItemFromTable() {
+            const rand = Math.random() * 100;
+            let cumulative = 0;
+            
+            for (let i = 0; i < PROBABILITY_TABLE.length; i++) {
+                cumulative += PROBABILITY_TABLE[i].prob;
+                if (rand <= cumulative) {
+                    return { ...PROBABILITY_TABLE[i] };
+                }
+            }
+            return { ...PROBABILITY_TABLE[PROBABILITY_TABLE.length - 1] }; // 오차범위 수렴 예외 스왑 가드
+        }
+
+        // 7. 가챠 시스템 구동 메인 트리거
+        function executeGacha(count) {
+            const cost = count === 1 ? 200 : 2000;
+
+            if (state.gCoinBalance < cost) {
+                alert(`G-COIN이 부족합니다.\n필요 코인: ${cost} G\n보유 코인: ${state.gCoinBalance} G\n상단의 G-COIN 충전소를 이용해 주세요.`);
+                return;
+            }
+
+            // 잔액 차감
+            state.gCoinBalance -= cost;
+            updateUIDisplay();
+
+            // 세션 리스트 생성 및 푸시 연산
+            state.currentSessionItems = [];
+            for (let i = 0; i < count; i++) {
+                const prize = pickItemFromTable();
+                prize.opened = false; // 수동 카드 뒤집기 체크 플래그
+                state.currentSessionItems.push(prize);
+                
+                // 가챠 결과 전체 누적 배열 백엔드 저장소 동적 이관
+                state.inventory.push(prize);
+            }
+
+            // 시각 연출 오버레이 실행 전처리
+            openGachaScreen();
+        }
+
+        // 8. 오버레이 연출 레이아웃 엔진 설계
+        function openGachaScreen() {
+            const screen = document.getElementById('modal-gacha-screen');
+            const grid = document.getElementById('gacha-display-grid');
+            const btnSkip = document.getElementById('btn-skip-gacha');
+            const btnClose = document.getElementById('btn-close-gacha');
+            
+            grid.innerHTML = '';
+            btnSkip.classList.remove('hidden');
+            btnClose.classList.add('hidden');
+            screen.classList.remove('hidden');
+
+            // 동적 아이템 카드 요소를 그리드 내부에 파싱 및 이벤트 할당
+            state.currentSessionItems.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = "crate-card w-full h-44 cursor-pointer animate-box-drop";
+                card.style.animationDelay = `${index * 0.08}s`;
+                card.setAttribute('id', `gacha-card-${index}`);
+                card.setAttribute('onclick', `revealIndividualCard(${index})`);
+
+                const borderStyle = item.theme === 'gold' ? 'border-2 border-amber-500 glow-gold bg-gradient-to-br from-amber-950 via-[#13151c] to-black' : 'border-2 border-slate-500 glow-silver bg-gradient-to-br from-slate-900 via-[#13151c] to-zinc-950';
+                const textBadge = item.theme === 'gold' ? 'bg-amber-500 text-black' : 'bg-slate-600 text-white';
+
+                card.innerHTML = `
+                    <div class="card-inner w-full h-full" id="card-inner-${index}">
+                        <div class="card-front flex flex-col items-center justify-center p-4">
+                            <div class="text-amber-500 text-3xl mb-2 animate-pulse"><i class="fas fa-box-open"></i></div>
+                            <span class="text-[10px] text-zinc-400 tracking-wider font-bold uppercase font-cyber">Click to Open</span>
+                        </div>
+                        <div class="card-back ${borderStyle} flex flex-col justify-between p-3 rounded shadow-2xl">
+                            <span class="self-start text-[9px] px-1.5 py-0.5 rounded font-black tracking-tighter ${textBadge}">
+                                ${item.grade}
+                            </span>
+                            <div class="text-center my-auto">
+                                <div class="text-xs font-bold text-zinc-100 px-1 break-keep">${item.name}</div>
+                            </div>
+                            <div class="text-right text-[10px] text-zinc-400 border-t border-zinc-800/60 pt-1 flex justify-between items-center">
+                                <span class="text-emerald-400 font-medium text-[9px]">+스크랩 10</span>
+                                <span class="font-cyber font-semibold">${item.prob}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 9. 개별 카드 직접 개봉 기능 처리
+        function revealIndividualCard(index) {
+            if (state.currentSessionItems[index].opened) return;
+            
+            state.currentSessionItems[index].opened = true;
+            const inner = document.getElementById(`card-inner-${index}`);
+            if (inner) {
+                inner.classList.add('is-flipped');
+            }
+            
+            checkAnimationCompletionStatus();
+        }
+
+        // 10. 한번에 열기 (스킵 기능) 구현부
+        function skipGachaAnimation() {
+            state.currentSessionItems.forEach((item, index) => {
+                item.opened = true;
+                const inner = document.getElementById(`card-inner-${index}`);
+                if (inner) inner.classList.add('is-flipped');
+            });
+            checkAnimationCompletionStatus();
+        }
+
+        // 11. 연출 상황 체크 자동 제어 훅
+        function checkAnimationCompletionStatus() {
+            const allOpened = state.currentSessionItems.every(item => item.opened);
+            if (allOpened) {
+                document.getElementById('btn-skip-gacha').classList.add('hidden');
+                document.getElementById('btn-close-gacha').classList.remove('hidden');
+            }
+        }
+
+        // 12. 시뮬레이션 창 닫기 및 최종 인벤토리 그리드 빌드
+        function closeGachaScreen() {
+            document.getElementById('modal-gacha-screen').classList.add('hidden');
+            renderInventoryGrid();
+        }
+
+        // 13. 누적 인벤토리 컴포넌트 실시간 동적 빌더
+        function renderInventoryGrid() {
+            const container = document.getElementById('inventory-container');
+            if (state.inventory.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center text-zinc-600 py-20">
+                        <i class="fas fa-ghost text-4xl mb-2"></i>
+                        <p class="text-xs">획득한 아이템이 없습니다. 상자를 오픈해보세요.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            
+            // 인벤토리 역순(최신순) 정렬 처리 출력
+            [...state.inventory].reverse().forEach(item => {
+                const boxItem = document.createElement('div');
+                const borderStyle = item.theme === 'gold' ? 'border border-amber-500/40 bg-gradient-to-b from-amber-950/20 to-zinc-900' : 'border border-zinc-800 bg-zinc-900/40';
+                const textColor = item.theme === 'gold' ? 'text-amber-400' : 'text-zinc-400';
+                
+                boxItem.className = `${borderStyle} p-3 rounded flex flex-col justify-between h-28 relative overflow-hidden`;
+                boxItem.innerHTML = `
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[9px] font-bold ${textColor}">${item.grade}</span>
+                        <h4 class="text-xs font-bold text-zinc-200 leading-tight">${item.name}</h4>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 border-t border-zinc-800/60 pt-1">
+                        <span class="text-[9px] text-emerald-400 font-semibold">번들 연동완료</span>
+                        <span class="text-[9px] text-zinc-500">x1</span>
+                    </div>
+                `;
+                container.appendChild(boxItem);
+            });
+        }
+
+        // 14. 전체 리셋 기능 스크립트
+        function clearInventory() {
+            if (confirm("시뮬레이션 인벤토리 내역을 정말 전부 삭제하겠습니까? (보유중인 G-Coin 및 스팀 머니는 동시 리셋되지 않습니다)")) {
+                state.inventory = [];
+                renderInventoryGrid();
+            }
+        }
+    </script>
+</body>
+</html>
